@@ -25,9 +25,9 @@
 #
 # Do not change anything below this line manually, the script will prompt you for input
 #
-########
-#LICENSE
-########
+#########
+# LICENSE
+#########
 #
 # MIT License
 #

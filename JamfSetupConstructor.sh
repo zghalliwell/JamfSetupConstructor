@@ -170,7 +170,6 @@ echo $(date) "Preliminary information gathered. Continuing on with Extension Att
 
 " >> $logPath
 
-
 ###########################
 # EXTENSION ATTRIBUTE SETUP
 ###########################
@@ -244,8 +243,7 @@ Is this correct?" buttons {"Yes", "No, try again..."} default button 1)')
 		else
 			EAOptionIndex=0
 			fi
-	
-	done
+done
 	
 #Create a count of the number of options and an index to reference the array
 EANumberOfOptions=$(echo "${#EAOptions[@]}")
@@ -357,9 +355,10 @@ If you need to make a change, hit Change." buttons {"Continue", "Change"} defaul
 			
 If these look correct, hit Continue.
 If you need to make a change, hit Change." buttons {"Continue", "Change"} default button 1)')
-				done
-	fi
-	
+	done
+fi
+
+#Report back to logs the details of the options chosen or the default options
 echo $(date) "Jamf Setup will be formatted with the following options:
 -BackGround Color: '"$backgroundColor"'
 -Page Text Color: '"$pageTextColor"'
@@ -403,7 +402,7 @@ if [[ $smartGroupChoice == "Option 1" ]]; then
 	else
 		smartGroupIndex=$(($numberOfSmartGroups-1))
 		echo $(date) "Option 2 selected; smart groups will only be made to correspond with the Extension Attribute Options" >> $logPath
-	fi
+fi
 	
 #Build Smart Group Names
 
@@ -414,7 +413,7 @@ for i in $(seq 0 $EAindex); do
 	
 	#add to smart group name array 
 	smartGroupNameArray+=( "$smartGroupName" )
-	done
+done
 
 ####################
 # FINAL CONFIRMATION
@@ -494,7 +493,7 @@ finalMessageChoice=$(osascript -e 'tell application "System Events" to button re
 if [[ $finalMessageChoice == "ABORT" ]]; then
 	echo $(date) "User chose to abort session session" >> $logPath
 	exit 0
-	fi
+fi
 
 echo $(date) "Information gathering done, user has selected to proceed, initiating construction of assets..
 
@@ -520,7 +519,7 @@ for i in $(seq 0 $EAindex); do
 	EAXML="$EAXML<choice>${EAOptions[$i]}</choice>"
 	name=${EAOptions[$i]}
 	echo "Option created: $name" >> $logPath
-	done
+done
 
 currentDateTime=$(date)
 
@@ -535,7 +534,7 @@ if [[ $EAidFormatted > 0 ]] && [[ $EAidFormatted < 999999999 ]]; then
 		echo $(date) "Error: $EAid" >> $logPath
 		echo "Due to error, script will now exit" >> $logPath
 		exit 0
-		fi
+fi
 
 echo $(date) "Extension Attribute construction finished, moving on to Smart Groups...
 
@@ -551,7 +550,7 @@ echo $(date) "Building XML..." >> $logPath
 #Build an array containing the proper XML for each Smart Group that needs to be created
 for i in $(seq 0 $EAindex); do
 	smartGroupXML+=( "<name>${smartGroupNameArray[$i]}</name><is_smart>true</is_smart><criteria><criterion><name>$EAName</name><priority>0</priority><and_or>AND</and_or><search_type>is</search_type><value>${EAOptions[$i]}</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion><criterion><name>Model</name><priority>1</priority><and_or>AND</and_or><search_type>not like</search_type><value>TV</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion></criteria>" )
-	done
+done
 
 #If they selected Option 1, add the "Newly Enrolled Devices smart group to the XML array
 if [[ $smartGroupChoice == "Option 1" ]]; then
@@ -570,7 +569,7 @@ if [[ $smartGroupChoice == "Option 1" ]]; then
 	#Create a variable to pinpoint the next open priority slot
 	lastPrioritySlot=$(($EAindex+1))
 	smartGroupXML+=( "<name>JSC_Newly Enrolled Devices</name><is_smart>true</is_smart><criteria>$newSmartGroupCriteria<criterion><name>Model</name><priority>$lastPrioritySlot</priority><and_or>AND</and_or><search_type>not like</search_type><value>TV</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion></criteria>" )
-	fi
+fi
 	
 #Count the total number of smart groups to be created
 smartGroupXMLindex=$(echo "${#smartGroupXML[@]}")
@@ -589,7 +588,7 @@ for i in $(seq 0 $smartGroupXMLindex); do
 			echo $(date) "Error: $SGid" >> $logPath
 			echo "Due to error, script will now exit" >> $logPath
 			exit 0
-			fi
+	fi
 done
 echo "Smart groups successfully created, moving on to App Configuration...
 
@@ -609,7 +608,7 @@ appConfigOptions="&lt;string&gt;${EAOptions[0]}&lt;/string&gt;&#13;"
 for i in $(seq 1 $EAindex); do
 	appConfigOptions="$appConfigOptions
 						&lt;string&gt;${EAOptions[$i]}&lt;/string&gt;&#13;"
-			done
+done
 
 #Build out the rest of the app config
 appConfig="<app_configuration><preferences>&lt;dict&gt;&#13;
@@ -659,7 +658,7 @@ appIDFormatted=$(echo $appID | xmllint --xpath '/mobile_device_application/id/te
 			echo $(date) "Error: $appID" >> $logPath
 			echo "Due to error, script will now exit" >> $logPath
 			exit 0
-			fi
+	fi
 
 echo "Everything has been successfully created! Enjoy your new Jamf Setup experience!
 
@@ -677,4 +676,4 @@ if [[ $closingSelection == "View Logs" ]]; then
 	exit 0
 	else
 		exit 0
-		fi
+fi

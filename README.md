@@ -28,6 +28,11 @@ How To Use This Script
 <br>This is what the app looks like by default. The text and colors can all be changed and colors must be entered in hexidecimal format. For help on finding these codes, I recommend https://htmlcolorcodes.com/#
 Here are the default options:<br>**-Background Color** (Hexidecimal format, default: white)<br>**-Page Text Color** (Hexidecimal format, default: dark grey)<br>**-Button Color** (Hexidecimal format, default: seafoam green)<br>**-Button Text Color** (Hexidecimal format, default: white)<br>**-Header Image Logo** (Hosted URL path, default: Jamf Logo)<br>**-Main Page Title** (Text, default: Make a Selection)<br>**-Main Page Body Text** (Text, default: Select the appropriate role below, and then click Submit to configure your device)<br>**-Button Text** (Text, default: Submit)<br>**-Success Page Title** (Text, default: Success)<br>**-Success Page Body Text** (Text, default: You have selected $SELECTION. Press the home button or swipe up to begin using this device.)
 
+6. <br>![!](https://i.ibb.co/4FQtrRs/Screen-Shot-2019-07-26-at-10-48-19-AM.png "PPPC Prompt for Apple Events")
+<br>When you run this script, depending on what version of macOS you're running you may get a prompt from our good friend PPPC asking you to allow Terminal (or the application you run the script from) access to Apple Events. This is because the script utilizes Apple Script to prompt you for information. You'll need to click allow in order for the script to run. If you don't want to keep this setting, then afterwards you can always open terminal and run 
+<br><code>tccutil reset "AppleEvents"</code><br>
+That will reset the Apple Events TCC settings so that you'll be prompted the next time this software needs to access it.
+
 Once the script has run, you will be able to find detailed logs in /Users/Shared/JamfSetupConstructorLogs.txt
 
 What Next?

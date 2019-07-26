@@ -51,7 +51,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-###################################################################################
+###############################################################
 
 #########################################
 # ESTABLISH STARTING VARIABLES AND ARRAYS
@@ -297,7 +297,7 @@ optionChoice=$(osascript -e 'tell application "System Events" to button returned
 -Main Page Body Text (Text, default: Select the appropriate role below, and then click Submit to configure your device)
 -Button Text (Text, default: Submit)
 -Success Page Title (Text, default: Success)
--Success Page Body Text (Text, default: You have selected $SELECTION. Press the home button or swipe up to begin using this device.
+-Success Page Body Text (Text, default: You have selected $SELECTION. Press the home button or swipe up to begin using this device.)
 
 If you want to keep these defaults for now or change them at a later time, click Keep Defaults.
 If you want to make changes to these now, select Change." buttons {"Keep Defaults", "Change"} default button 2)')
@@ -550,7 +550,7 @@ echo $(date) "Extension Attribute construction finished, moving on to Smart Grou
 echo $(date) "Building XML..." >> $logPath
 #Build an array containing the proper XML for each Smart Group that needs to be created
 for i in $(seq 0 $EAindex); do
-	smartGroupXML+=( "<name>${smartGroupNameArray[$i]}</name><priority>0</priority><is_smart>true</is_smart><criteria><criterion><name>$EAName</name><and_or>AND</and_or><search_type>is</search_type><value>${EAOptions[$i]}</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion><criterion><name>Model</name><priority>1</priority><and_or>AND</and_or><search_type>not like</search_type><value>TV</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion></criteria>" )
+	smartGroupXML+=( "<name>${smartGroupNameArray[$i]}</name><is_smart>true</is_smart><criteria><criterion><name>$EAName</name><priority>0</priority><and_or>AND</and_or><search_type>is</search_type><value>${EAOptions[$i]}</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion><criterion><name>Model</name><priority>1</priority><and_or>AND</and_or><search_type>not like</search_type><value>TV</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion></criteria>" )
 	done
 
 #If they selected Option 1, add the "Newly Enrolled Devices smart group to the XML array
@@ -563,9 +563,13 @@ if [[ $smartGroupChoice == "Option 1" ]]; then
 	done
 	
 	echo $(date) "Adding extra smart group since Option 1 was selected..." >> $logPath
+	#Add the name of the new smart group to the end of the array
 	smartGroupNameArray+=( "JSC_Newly Enrolled Devices" )
+	
 	#Once all of the criteria is added to the XML, add the whole thing to the end of the Smart Group XML array
-	smartGroupXML+=( "<name>JSC_Newly Enrolled Devices</name><is_smart>true</is_smart><criteria>$newSmartGroupCriteria<criterion><name>Model</name><and_or>AND</and_or><search_type>not like</search_type><value>TV</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion></criteria>" )
+	#Create a variable to pinpoint the next open priority slot
+	lastPrioritySlot=$(($EAindex+1))
+	smartGroupXML+=( "<name>JSC_Newly Enrolled Devices</name><is_smart>true</is_smart><criteria>$newSmartGroupCriteria<criterion><name>Model</name><priority>$lastPrioritySlot</priority><and_or>AND</and_or><search_type>not like</search_type><value>TV</value><opening_paren>false</opening_paren><closing_paren>false</closing_paren></criterion></criteria>" )
 	fi
 	
 #Count the total number of smart groups to be created
@@ -666,4 +670,11 @@ echo "Everything has been successfully created! Enjoy your new Jamf Setup experi
 #Kill the jamf helper window that's telling the user to wait
 jamf killJAMFHelper
 
-osascript -e 'tell application "System Events" to (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration! For details on what all happened, you can find the logs at /Users/Shared/JamfSetupConstructorLogs.txt" buttons {"AWESOME"} default button 1)'
+closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration! For details on what all happened, you can find the logs at /Users/Shared/JamfSetupConstructorLogs.txt" buttons {"Close","View Logs"} default button 1)')
+
+if [[ $closingSelection == "View Logs" ]]; then
+	open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+	exit 0
+	else
+		exit 0
+		fi

@@ -91,6 +91,7 @@ smartGroupXMLindex=
 appConfigOptions=
 appConfig=
 logPath="/Users/Shared/JamfSetupConstructorLogs.txt"
+closingSelection=
 
 #Optional Variable Defaults
 backgroundColor="#F8F8F8"
@@ -492,6 +493,14 @@ finalMessageChoice=$(osascript -e 'tell application "System Events" to button re
 #If they hit abort, exit 0
 if [[ $finalMessageChoice == "ABORT" ]]; then
 	echo $(date) "User chose to abort session session" >> $logPath
+	closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "Session cancelled manually.
+	
+	Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
+
+	if [[ $closingSelection == "View Logs" ]]; then
+		open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+		exit 0
+	fi
 	exit 0
 fi
 
@@ -533,6 +542,16 @@ if [[ $EAidFormatted > 0 ]] && [[ $EAidFormatted < 999999999 ]]; then
 	else
 		echo $(date) "Error: $EAid" >> $logPath
 		echo "Due to error, script will now exit" >> $logPath
+		closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "Due to an error the script has been cancelled.
+		
+		Error: "'$EAid'"
+		
+		Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
+
+		if [[ $closingSelection == "View Logs" ]]; then
+			open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+			exit 0
+		fi
 		exit 0
 fi
 
@@ -587,6 +606,16 @@ for i in $(seq 0 $smartGroupXMLindex); do
 		else
 			echo $(date) "Error: $SGid" >> $logPath
 			echo "Due to error, script will now exit" >> $logPath
+			closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "Due to an error the script has been cancelled.
+			
+			Error: "'$SGid'"
+			
+			Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
+
+			if [[ $closingSelection == "View Logs" ]]; then
+				open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+				exit 0
+			fi
 			exit 0
 	fi
 done
@@ -657,6 +686,17 @@ appIDFormatted=$(echo $appID | xmllint --xpath '/mobile_device_application/id/te
 		else
 			echo $(date) "Error: $appID" >> $logPath
 			echo "Due to error, script will now exit" >> $logPath
+			
+			closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "Due to an error the script has been cancelled.
+			
+			Error: "'$appID'"
+			
+			Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
+
+			if [[ $closingSelection == "View Logs" ]]; then
+				open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+				exit 0
+			fi
 			exit 0
 	fi
 

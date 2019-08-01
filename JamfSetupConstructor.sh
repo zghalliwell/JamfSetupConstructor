@@ -973,7 +973,11 @@ echo "Everything has been successfully created! Enjoy your new Jamf Setup experi
 #Kill the jamf helper window that's telling the user to wait
 jamf killJAMFHelper
 
-closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration! For details on what all happened, you can find the logs at '"$logPath"'" buttons {"Close","View Logs"} default button 1)')
+closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration!
+
+Note: You might not see everything that was created right away because of your browsers cache. If you do not see your extension attribute or smart groups, just wait a few minutes or clear your browser cache and refresh the page.
+
+ For details on what all happened, you can find the logs at '"$logPath"'" buttons {"Close","View Logs"} default button 1)')
 
 if [[ $closingSelection == "View Logs" ]]; then
 	open -a TextEdit.app "$logPath"

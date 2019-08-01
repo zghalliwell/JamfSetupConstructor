@@ -176,6 +176,7 @@ jamf killJAMFHelper
 
 # Testing user's privileges to see if the necessary ones exist
 if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Update Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Create Mobile Device Extension Attributes"* ]] && [[ $adminPrivileges == *"Create Static Mobile Device Groups"* ]] && [[ $adminPrivileges == *"Create Accounts"* ]] && [[ $adminPrivileges == *"Read Accounts"* ]] && [[ $adminPrivileges == *"Update Accounts"* ]] && [[ $adminPrivileges == *"Create Smart Mobile Device Groups"* ]]; then
+	
 	#Admin account has the necessary privileges needed, awesome!
 	echo $(date) "Admin user $adminUser has all of the privileges necessary, continuing on..." >> $logPath
 	else 
@@ -226,10 +227,10 @@ accountVerify=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/
 if [[ "$accountVerify" != "$setupUser" ]]; then
 	#If the account doesn't exist, create it with permissions needed for API
 	echo $(date) "Account $setupUser does not exist, creating..." >> $logPath
-	curl -su $uadminUser:$adminPass $jamfProURL/JSSResource/accounts/userid/0 -H "Content-type: application/xml" -X POST -d "<account>
+	outcome=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/userid/0 -H "Content-type: application/xml" -X POST -d "<account>
 	<name>$setupUser</name>
 	<directory_user>false</directory_user>
-	<full_name>$setupUser</full_name>
+	<full_name>API Service Account created on $(date) by $adminUser</full_name>
 	<email/>
 	<email_address/>
 	<enabled>Enabled</enabled>
@@ -250,7 +251,8 @@ if [[ "$accountVerify" != "$setupUser" ]]; then
 		<casper_remote/>
 		<casper_imaging/>
 	</privileges>
-	</account>"
+	</account>")
+	echo "$outcome" >> $logPath
 	echo $(date) "Account created with appropriate permissions." >> $logPath
 	else 
 		#If it does exist, check its permissions

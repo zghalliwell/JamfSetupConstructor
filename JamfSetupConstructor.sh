@@ -252,8 +252,8 @@ if [[ "$accountVerify" != "$setupUser" ]]; then
 		<casper_imaging/>
 	</privileges>
 	</account>")
-	echo "$outcome" >> $logPath
-	echo $(date) "Account created with appropriate permissions." >> $logPath
+	outcomeFormatted=$(echo "$outcome" | xmllint --xpath '/account/id/text()' -)
+	echo $(date) "The $setupUser account has been created at $jamfProURL with an ID of $outcomeFormatted" >> $logPath
 	else 
 		#If it does exist, check its permissions
 		echo $(date) "Account already exists, checking permissions..." >> $logPath
@@ -264,7 +264,7 @@ if [[ "$accountVerify" != "$setupUser" ]]; then
 		if [[ $privilegeVerify != *"Update Mobile Device Extension Attributes"* ]] || [[ $privilegeVerify != *"Update Mobile Devices"* ]] || [[ $privilegeVerify != *"Update User"* ]] || [[ $privilegeVerify != *"Read Mobile Devices"* ]]; then
 			#If it has incorrect permissions, correct them
 			echo $(date) "Account $setupUser doesn't have the correct permissions, updating to correct permission set" >> $logPath
-			curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/userid/$accountID -H "Content-type: text/xml" -X PUT -d "<account><privileges><jss_objects><privilege>Update Mobile Device Extension Attributes</privilege><privilege>Read Mobile Devices</privilege><privilege>Update Mobile Devices</privilege><privilege>Update User</privilege></jss_objects></privileges></account>"
+			curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/userid/$accountID -H "Content-type: text/xml" -X PUT -d "<account><full_name>API Service Account updated on $(date) by $adminUser</full_name><privileges><jss_objects><privilege>Update Mobile Device Extension Attributes</privilege><privilege>Read Mobile Devices</privilege><privilege>Update Mobile Devices</privilege><privilege>Update User</privilege></jss_objects></privileges></account>"
 			else
 				echo $(date) "Account $setupUser has the correct permissions." >> $logPath
 				fi

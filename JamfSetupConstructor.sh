@@ -98,7 +98,7 @@ smartGroupXML=()
 smartGroupXMLindex=
 appConfigOptions=
 appConfig=
-logPath="/Users/Shared/JamfSetupConstructorLogs.txt"
+logPath=~/Desktop/JamfSetupConstructorLogs.txt
 closingSelection=
 
 #Optional Variable Defaults
@@ -120,6 +120,10 @@ successPageBody="You have selected: "'$SELECTION'". Press the home button or swi
 #Prompt the user with the prerequisites needed to run this script successfully and allow them to quit if they're not ready. If they quit, script will exit 0 and notate in logs
 
 #Create Log File
+echo "################################
+# JAMF SETUP CONSTRUCTOR
+################################
+" >> $logPath
 echo $(date) "Jamf Setup Constructor initiated, prompting user to make sure dependencies are in place..." >> $logPath
 
 initialAnswer=$(osascript -e 'tell application "System Events" to button returned of (display dialog "Welcome to The Jamf Setup Constructor!
@@ -145,6 +149,12 @@ if [[ $initialAnswer == "Quit" ]]; then
 #Prompt the user for the URL of their Jamf Pro server
 jamfProURL=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the URL of your Jamf Pro server" default answer "ex. https://my.jamf.pro" buttons {"OK"} default button 1)')
 echo $(date) "Jamf Pro Server: $jamfProURL" >> $logPath
+
+echo "
+################################
+# ACCOUNT VALIDATION AND JAMF SETUP USER CREATION
+################################
+" >> $logPath
 
 ##########################
 # ADMIN ACCOUNT VALIDATION
@@ -393,8 +403,9 @@ if [[ $jamfSetupID > 0 ]] && [[ $jamfSetupID < 99999999999999 ]]; then
 		
 echo $(date) "Preliminary information gathered. Continuing on with Extension Attribute Setup...
 
-###################################
-
+################################
+# EXTENSION ATTRIBUTE SETUP
+################################
 " >> $logPath
 
 ###########################
@@ -506,8 +517,9 @@ NOTE: Nothing has been created in Jamf Pro so far, please proceed to finish Cons
 echo $(date) "$EAConfirmationMessage" >> $logPath
 echo $(date) "Extension attribute section completed. Starting Optional Configurations
 
-###########################################
-
+################################
+# OPTIONAL CONFIGURATIONS
+################################
 " >> $logPath
 
 #########################
@@ -605,7 +617,9 @@ echo $(date) "Jamf Setup will be formatted with the following options:
 -Success Page Title: '"$successPageTitle"'
 -Success Page Body: '"$successPageBody"'
 
-########################################
+################################
+# SMART GROUP SETUP
+################################
 
 Initiating Smart Group Section
 " >> $logPath
@@ -648,6 +662,13 @@ for i in $(seq 0 $EAindex); do
 	smartGroupNameArray+=( "$smartGroupName" )
 done
 
+echo $(date) "Smart group section completed.
+
+################################
+# FINAL USER CONFIRMATION
+################################
+" >> $logPath
+
 ####################
 # FINAL CONFIRMATION
 ####################
@@ -671,10 +692,6 @@ $EAConfirmationMessage
 SMART GROUPS
 A total of $numberOfSmartGroups smart mobile device groups will be created with the following names:
 "
-echo $(date) "The following smart groups will be created:" >> $logPath
-for i in $(seq 0 $smartGroupIndex); do
-	echo ${smartGroupNameArray[$i]} >> $logPath
-	done 
 	
 #Add smart group names to message
 for i in $(seq 0 $smartGroupIndex); do
@@ -686,7 +703,6 @@ for i in $(seq 0 $smartGroupIndex); do
 if [[ $smartGroupChoice == "Option 1" ]]; then
 	finalMessage="$finalMessage
 	JSC_Newly Enrolled Devices"
-	echo "JSC_Newly Enrolled Devices" >> $logPath
 	fi
 
 #If they changed the default optional values, display those as well
@@ -722,6 +738,11 @@ If these settings look wrong in any way, hit ABORT to cancel."
 #Display message to user
 finalMessageChoice=$(osascript -e 'tell application "System Events" to button returned of (display dialog "'"$finalMessage"'" buttons {"PROCEED", "ABORT"} default button 1)')
 
+echo $(date) "The following confirmation message was displayed to user:
+
+$finalMessage
+" >> $logPath
+
 #If they hit abort, exit 0
 if [[ $finalMessageChoice == "ABORT" ]]; then
 	echo $(date) "User chose to abort session session" >> $logPath
@@ -730,7 +751,7 @@ if [[ $finalMessageChoice == "ABORT" ]]; then
 	Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
 
 	if [[ $closingSelection == "View Logs" ]]; then
-		open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+		open -a TextEdit.app "$logPath"
 		exit 0
 	fi
 	exit 0
@@ -738,8 +759,9 @@ fi
 
 echo $(date) "Information gathering done, user has selected to proceed, initiating construction of assets..
 
-#############################################
-
+################################
+# CREATION OF ASSETS IN JAMF PRO
+################################
 " >> $logPath
 
 ################################
@@ -749,6 +771,12 @@ echo $(date) "Information gathering done, user has selected to proceed, initiati
 #Launch a Jamf Helper window to let the user know it's working
 echo $(date) "Launching Jamf Helper to let the user know to wait..." >> $logPath
 "/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper" -windowType utility -title "Constructing..." -description "Please wait while we make some Jamf magic happen..." -alignDescription center &
+
+echo "
+################################
+# CONSTRUCT EXTENSION ATTRIBUTE AND OPTIONS
+################################
+" >> $logPath
 
 ###############################
 # CONSTRUCT EXTENSION ATTRIBUTE
@@ -781,7 +809,7 @@ if [[ $EAidFormatted > 0 ]] && [[ $EAidFormatted < 999999999 ]]; then
 		Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
 
 		if [[ $closingSelection == "View Logs" ]]; then
-			open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+			open -a TextEdit.app "$logPath"
 			exit 0
 		fi
 		exit 0
@@ -789,8 +817,9 @@ fi
 
 echo $(date) "Extension Attribute construction finished, moving on to Smart Groups...
 
-#######################################
-
+################################
+# CREATION OF SMART GROUPS
+################################
 " >> $logPath
 
 ########################
@@ -845,7 +874,7 @@ for i in $(seq 0 $smartGroupXMLindex); do
 			Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
 
 			if [[ $closingSelection == "View Logs" ]]; then
-				open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+				open -a TextEdit.app "$logPath"
 				exit 0
 			fi
 			exit 0
@@ -853,8 +882,9 @@ for i in $(seq 0 $smartGroupXMLindex); do
 done
 echo "Smart groups successfully created, moving on to App Configuration...
 
-############################################
-
+################################
+# CREATION OF APP CONFIGURATION IN JAMF PRO
+################################
 " >> $logPath
 
 #########################
@@ -926,7 +956,7 @@ appIDFormatted=$(echo $appID | xmllint --xpath '/mobile_device_application/id/te
 			Click "View Logs" to view more information." buttons {"Close","View Logs"} default button 1)')
 
 			if [[ $closingSelection == "View Logs" ]]; then
-				open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+				open -a TextEdit.app "$logPath"
 				exit 0
 			fi
 			exit 0
@@ -934,17 +964,18 @@ appIDFormatted=$(echo $appID | xmllint --xpath '/mobile_device_application/id/te
 
 echo "Everything has been successfully created! Enjoy your new Jamf Setup experience!
 
-############################################
-
+###########################################
+# SUCCESS!!! BRING IN THE DANCING LOBSTERS!
+###########################################
 " >> $logPath
 
 #Kill the jamf helper window that's telling the user to wait
 jamf killJAMFHelper
 
-closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration! For details on what all happened, you can find the logs at /Users/Shared/JamfSetupConstructorLogs.txt" buttons {"Close","View Logs"} default button 1)')
+closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration! For details on what all happened, you can find the logs at '"$logPath"'" buttons {"Close","View Logs"} default button 1)')
 
 if [[ $closingSelection == "View Logs" ]]; then
-	open -a TextEdit.app /Users/Shared/JamfSetupConstructorLogs.txt
+	open -a TextEdit.app "$logPath"
 	exit 0
 	else
 		exit 0

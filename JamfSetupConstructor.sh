@@ -296,7 +296,9 @@ echo $(date) "User has selected $passwordOption..." >> $logPath
 if [[ $passwordOption == "Copy to Clipboard" ]]; then
 	echo $(date) "Copying password to clipboard" >> $logPath
 	echo $setupPass | pbcopy
-	osascript -e 'tell application "System Events" to button returned of(display dialog "The password has been copied to your clipboard. At this moment, pause for a second and go log into Jamf Pro. Go into Settings/Jamf Pro User Accounts and Groups and find the '"$setupUser"' user that was created. When you edit that user, paste the password into both of the password fields on that user account.
+	osascript -e 'tell application "System Events" to button returned of(display dialog "STOP!
+
+The password has been copied to your clipboard. At this moment, pause for a second and go log into Jamf Pro. Go into Settings/Jamf Pro User Accounts and Groups and find the '"$setupUser"' user that was created. When you edit that user, paste the password into both of the password fields on that user account.
 
 When you have SAVED and finished, click TEST below.
 

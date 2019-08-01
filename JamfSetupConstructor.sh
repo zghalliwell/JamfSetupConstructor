@@ -165,7 +165,6 @@ echo "
 # -READ/UPDATE on Mobile Device Apps
 # -CREATE on Mobile Device Extension Attributes
 # -CREATE on Smart Mobile Device Groups
-# -CREATE on Static Mobile Device Groups
 #
 # After proceeding, first prompt the user to enter admin credentials for their Jamf Pro server
 adminUser=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the username of an ADMIN for your Jamf Pro server at '"$jamfProURL"'" default answer "" buttons {"OK"} default button 1)')
@@ -182,7 +181,7 @@ adminRecord=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/us
 adminPrivileges=$(echo $adminRecord | xmllint --xpath '/account/privileges/jss_objects' -)
 
 # Testing user's privileges to see if the necessary ones exist
-if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Update Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Create Mobile Device Extension Attributes"* ]] && [[ $adminPrivileges == *"Create Static Mobile Device Groups"* ]] && [[ $adminPrivileges == *"Create Accounts"* ]] && [[ $adminPrivileges == *"Read Accounts"* ]] && [[ $adminPrivileges == *"Update Accounts"* ]] && [[ $adminPrivileges == *"Create Smart Mobile Device Groups"* ]]; then
+if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Update Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Create Mobile Device Extension Attributes"* ]] && [[ $adminPrivileges == *"Create Accounts"* ]] && [[ $adminPrivileges == *"Read Accounts"* ]] && [[ $adminPrivileges == *"Update Accounts"* ]] && [[ $adminPrivileges == *"Create Smart Mobile Device Groups"* ]]; then
 	
 	#Admin account has the necessary privileges needed, awesome!
 	echo $(date) "Admin user $adminUser has all of the privileges necessary, continuing on..." >> $logPath
@@ -192,7 +191,6 @@ if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPri
 	-READ/UPDATE on Mobile Device Apps
 	-CREATE on Mobile Device Extension Attributes
 	-CREATE on Smart Mobile Device Groups
-	-CREATE on Static Mobile Device Groups.
 	Exiting script." >> $logPath
 	
 	#Inform the user that the account does not have proper privileges
@@ -204,8 +202,7 @@ if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPri
 	-CREATE/READ/UPDATE on Jamf Pro User Accounts and Groups
 	-READ/UPDATE on Mobile Device Apps
 	-CREATE on Mobile Device Extension Attributes
-	-CREATE on Smart Mobile Device Groups
-	-CREATE on Static Mobile Device Groups" buttons {"OK"} default button 1)'
+	-CREATE on Smart Mobile Device Groups" buttons {"OK"} default button 1)'
 	exit 0
 	fi
 	

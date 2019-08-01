@@ -24,7 +24,7 @@ How To Use This Script
 ----------
 **This script needs to be run from a computer that is enrolled in Jamf Pro so it has access to Jamf Helper**
 
-1. First off, you'll need an Admin account in Jamf Pro that can be used to make all of the things necessary. When you first run the script it will ask for your Jamf Pro URL and then the username and password for an Admin Account. That admin account needs AT LEAST the following privileges:<p>CREATE/READ/UPDATE on **Jamf Pro User Accounts and Groups**<br>READ/UPDATE on **Mobile Device Apps**<br>CREATE on **Mobile Device Extension Attributes**<br>CREATE on **Smart Mobile Device Groups**<br>CREATE on **Static Mobile Device Groups**
+1. First off, you'll need an Admin account in Jamf Pro that can be used to make all of the things necessary. When you first run the script it will ask for your Jamf Pro URL and then the username and password for an Admin Account. That admin account needs AT LEAST the following privileges:<p>CREATE/READ/UPDATE on **Jamf Pro User Accounts and Groups**<br>READ/UPDATE on **Mobile Device Apps**<br>CREATE on **Mobile Device Extension Attributes**<br>CREATE on **Smart Mobile Device Groups**
 
 2. Next thing you'll need to do is make sure you already have the Jamf Setup app added to your Mobile Device Apps page in Jamf Pro either through Apps and Books in Apple Business/School Manager (The artist formerly known as VPP), or through the Jamf Pro GUI in the Mobile Device Apps section. You'll need to configure the VPP and General tabs as well but leave the app unscoped for now and leave the App Configuration tab empty, the script will take care of filling that part out.
 

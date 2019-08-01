@@ -13,13 +13,12 @@
 #
 # Before running this script make sure you have the following dependencies in place!
 # 1. You have a Jamf Pro Admin user account and password
-# 2. User account and password for the Jamf Setup app to make API calls
-# 3. The Jamf Setup app needs to already exist as an app record in Jamf Pro under Devices/Mobile Device Apps
-# 4. The name you would like to give the extension attribute that determines the laodout for a device
-# 5. All of the options you would like for different possible loadouts
-# 6. The hexidecimal color codes for what you would like to be the background, text, and border colors(optional)
-# 7. The URL of a hosted image to display when the app opens (optional)
-# 8. Any messaging you would like to change (optional)
+# 2. The Jamf Setup app needs to already exist as an app record in Jamf Pro under Devices/Mobile Device Apps
+# 3. The name you would like to give the extension attribute that determines the laodout for a device
+# 4. All of the options you would like for different possible loadouts
+# 5. The hexidecimal color codes for what you would like to be the background, text, and border colors(optional)
+# 6. The URL of a hosted image to display when the app opens (optional)
+# 7. Any messaging you would like to change (optional)
 #
 # Upon completion or failure, you can find the logs at /Users/Shared/JamfSetupConstructorLogs.txt
 #
@@ -51,6 +50,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+# Created by Zach Halliwell
+# https://github.com/zghalliwell
+#
 ###############################################################
 
 #########################################
@@ -62,9 +64,15 @@ jamfProURL=
 initialAnswer=
 adminUser=
 adminPass=
-setupUser=
+adminRecord=
+accountRecord=
+privilegeVerify=
+accountID=
+setupUser="jamfSetup"
 setupPass=
 adminPrivileges=
+passwordOption=
+setupTest=
 EAName=
 EANameVerification=
 EAOptions=()
@@ -118,21 +126,19 @@ initialAnswer=$(osascript -e 'tell application "System Events" to button returne
 _______________________________________
 
 BEFORE PROCEEDING, YOU WILL NEED:
-1. You have a Jamf Pro Admin user account and password
-2. User account and password for the Jamf Setup app to make API calls
-3. The Jamf Setup app needs to already exist as an app record in Jamf Pro under Devices/Mobile Device Apps
-4. The name you would like to give the extension attribute that determines the laodout for a device
-5. All of the options you would like for different possible loadouts
-6. The hexidecimal color codes for what you would like to be the background, text, and border colors(optional)
-7. The URL of a hosted image to display when the app opens (optional)
-8. Any messaging you would like to change (optional)
+ 1. You have a Jamf Pro Admin user account and password
+ 2. The Jamf Setup app needs to already exist as an app record in Jamf Pro under Devices/Mobile Device Apps
+ 3. The name you would like to give the extension attribute that determines the laodout for a device
+ 4. All of the options you would like for different possible loadouts
+ 5. The hexidecimal color codes for what you would like to be the background, text, and border colors(optional)
+ 6. The URL of a hosted image to display when the app opens (optional)
+ 7. Any messaging you would like to change (optional)
 
-If you do not have these items necessary, hit Quit and gather them before proceeding. Once this script is run, it will create everything it can and anything missed will need to be created manually later." buttons {"Quit", "Proceed"} default button 2)')
+If you do not have these items necessary, hit Quit and gather them before proceeding." buttons {"Quit", "Proceed"} default button 2)')
 
 #If the user clicks quit, stop the script immediately
 if [[ $initialAnswer == "Quit" ]]; then
 	echo $(date) "User chose to quit session, terminating..." >> $logPath
-	date >> $logPath
 	exit 0
 	fi
 
@@ -140,19 +146,229 @@ if [[ $initialAnswer == "Quit" ]]; then
 jamfProURL=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the URL of your Jamf Pro server" default answer "ex. https://my.jamf.pro" buttons {"OK"} default button 1)')
 echo $(date) "Jamf Pro Server: $jamfProURL" >> $logPath
 
-#After proceeding, first prompt the user to enter admin credentials for their Jamf Pro server
+##########################
+# ADMIN ACCOUNT VALIDATION
+##########################
+#
+# The admin account for Jamf Pro must have AT LEAST the following Privileges:
+# -CREATE/READ/UPDATE on Jamf Pro User Accounts and Groups
+# -READ/UPDATE on Mobile Device Apps
+# -CREATE on Mobile Device Extension Attributes
+# -CREATE on Smart Mobile Device Groups
+# -CREATE on Static Mobile Device Groups
+#
+# After proceeding, first prompt the user to enter admin credentials for their Jamf Pro server
 adminUser=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the username of an ADMIN for your Jamf Pro server at '"$jamfProURL"'" default answer "" buttons {"OK"} default button 1)')
 echo $(date) "Jamf Pro admin account to be used: $adminUser" >> $logPath
-
-#Prompt for their admin password with hidden input
+#
+# Prompt for their admin password with hidden input
 adminPass=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the password for admin user '"$adminUser"' for your Jamf Pro server at '"$jamfProURL"'" default answer "" buttons {"OK"} default button 1 with hidden answer)')
 
-#Prompt the user for the credentials for the Jamf Setup account
-setupUser=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the username of the SETUP user for your Jamf Pro server at '"$jamfProURL"' (This is the account that the Jamf Setup app will use to change the loadout of devices, see documentation for necessary privileges)" default answer "" buttons {"OK"} default button 1)')
-echo $(date) "Jamf Pro Setup account to be used by Jamf Setup app: $setupUser" >> $logPath
+"/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper" -windowType utility -title "Authenticating..." -description "Testing your credentials and privileges, please stand by..." -alignDescription center &
 
-#Prompt for the setup user's password
-setupPass=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the password for admin user '"$setupUser"' for your Jamf Pro server at '"$jamfProURL"'" default answer "" buttons {"OK"} default button 1 with hidden answer)')
+# The script will now verify the user's account has at least these privileges
+echo $(date) "Checking to see if admin user $adminUser has the correct privileges..." >> $logPath
+adminRecord=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/username/$adminUser -H "Accept: text/xml" -X GET)
+adminPrivileges=$(echo $adminRecord | xmllint --xpath '/account/privileges/jss_objects' -)
+
+# Kill the Jamf Helper prompt that's telling them to wait
+jamf killJAMFHelper
+
+# Testing user's privileges to see if the necessary ones exist
+if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Update Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Create Mobile Device Extension Attributes"* ]] && [[ $adminPrivileges == *"Create Static Mobile Device Groups"* ]] && [[ $adminPrivileges == *"Create Accounts"* ]] && [[ $adminPrivileges == *"Read Accounts"* ]] && [[ $adminPrivileges == *"Update Accounts"* ]] && [[ $adminPrivileges == *"Create Smart Mobile Device Groups"* ]]; then
+	#Admin account has the necessary privileges needed, awesome!
+	echo $(date) "Admin user $adminUser has all of the privileges necessary, continuing on..." >> $logPath
+	else 
+		echo $(date) "The admin user credentials that were entered do not meet all of the privelege requirements. Please log into Jamf Pro and give the account the following privileges:
+	-CREATE/READ/UPDATE on Jamf Pro User Accounts and Groups
+	-READ/UPDATE on Mobile Device Apps
+	-CREATE on Mobile Device Extension Attributes
+	-CREATE on Smart Mobile Device Groups
+	-CREATE on Static Mobile Device Groups.
+	Exiting script." >> $logPath
+	
+	#Inform the user that the account does not have proper privileges
+	osascript -e 'tell application "System Events" to(display dialog "Your admin account does not have the correct privileges. Please log into Jamf Pro and give the account the following permissions:
+
+	-CREATE/READ/UPDATE on Jamf Pro User Accounts and Groups
+	-READ/UPDATE on Mobile Device Apps
+	-CREATE on Mobile Device Extension Attributes
+	-CREATE on Smart Mobile Device Groups
+	-CREATE on Static Mobile Device Groups" buttons {"OK"} default button 1)'
+	exit 0
+	fi
+	
+##########################
+# JAMF SETUP USER CREATION
+##########################
+#
+# The Jamf Setup app requires its own API account that it can use to change the loadout of devices
+# when the user selects an option. This script will first check to see if the default 
+# account exists in Settings/Jamf Pro User Accounts and Groups and if it doesn't, it will 
+# create the account with the necessary privileges. If it does exist, it will give it the 
+# correct privileges. It will then generate a random 25 character string to use as the password,
+# this is the password that Jamf Setup will use to authenticate with that account. Once
+# created, it will ask if you would like to copy that password to your clipboard to use OR 
+# allow you to create your own password to use. It will then have you go into Jamf Pro and update
+# the password on the default account that was created. To do so, go to 
+# Settings/Jamf Pro User Accounts and Groups and click "jamfSetup" and update the password
+# field with the randomly generated password that has been provided. The script will test
+# if the password has been updated and won't proceed until it can validate that it can do so.
+
+echo $(date) "JSC will now check if the $setupUser account exists in Jamf Pro or not..." >> $logPath
+
+#First run an API command to see if the account exists and save the response in a variable
+accountVerify=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/username/$setupUser -H "Accept: text/xml" -X GET | xmllint --xpath '/account/name/text()' -)
+
+#Test to see if the account is created, if it's not created then create it with appropriate permissions
+#If it is created, check its permissions and update them with the appropriate permissions if necessary
+
+if [[ "$accountVerify" != "$setupUser" ]]; then
+	#If the account doesn't exist, create it with permissions needed for API
+	echo $(date) "Account $setupUser does not exist, creating..." >> $logPath
+	curl -su $uadminUser:$adminPass $jamfProURL/JSSResource/accounts/userid/0 -H "Content-type: application/xml" -X POST -d "<account>
+	<name>$setupUser</name>
+	<directory_user>false</directory_user>
+	<full_name>$setupUser</full_name>
+	<email/>
+	<email_address/>
+	<enabled>Enabled</enabled>
+	<force_password_change>false</force_password_change>
+	<access_level>Full Access</access_level>
+	<privilege_set>Custom</privilege_set>
+	<privileges>
+		<jss_objects>
+			<privilege>Update Mobile Device Extension Attributes</privilege>
+			<privilege>Read Mobile Devices</privilege>
+			<privilege>Update Mobile Devices</privilege>
+			<privilege>Update User</privilege>
+		</jss_objects>
+		<jss_settings/>
+		<jss_actions/>
+		<recon/>
+		<casper_admin/>
+		<casper_remote/>
+		<casper_imaging/>
+	</privileges>
+	</account>"
+	echo $(date) "Account created with appropriate permissions." >> $logPath
+	else 
+		#If it does exist, check its permissions
+		echo $(date) "Account already exists, checking permissions..." >> $logPath
+		accountRecord=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/username/$setupUser -H "Accept: text/xml" -X GET)
+		privilegeVerify=$(echo $accountRecord | xmllint --xpath '/account/privileges/jss_objects' -)
+		accountID=$(echo $accountRecord | xmllint --xpath '/account/id/text()' -)
+
+		if [[ $privilegeVerify != *"Update Mobile Device Extension Attributes"* ]] || [[ $privilegeVerify != *"Update Mobile Devices"* ]] || [[ $privilegeVerify != *"Update User"* ]] || [[ $privilegeVerify != *"Read Mobile Devices"* ]]; then
+			#If it has incorrect permissions, correct them
+			echo $(date) "Account $setupUser doesn't have the correct permissions, updating to correct permission set" >> $logPath
+			curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/userid/$accountID -H "Content-type: text/xml" -X PUT -d "<account><privileges><jss_objects><privilege>Update Mobile Device Extension Attributes</privilege><privilege>Read Mobile Devices</privilege><privilege>Update Mobile Devices</privilege><privilege>Update User</privilege></jss_objects></privileges></account>"
+			else
+				echo $(date) "Account $setupUser has the correct permissions." >> $logPath
+				fi
+fi
+
+##############################
+# JAMF SETUP PASSWORD CREATION
+##############################
+# Now generate a random 25 character alphanumeric string to use as the password for the jamfSetup API account
+# Once the password is generated, the user will be prompted to either copy that to their clipboard so they
+# can enter it in the Jamf Pro GUI or they can choose to create their own password if they wish
+
+#Generate a random 25-character alphanumeric string and save it in the setupPass variable
+setupPass=$(perl -e '@c=("A".."Z","a".."z",0..9);$p.=$c[rand(scalar @c)] for 1..25; print "$p\n"')
+
+#Prompt the user to ask them if they would like to use the randomly generated password or enter their own password
+passwordOption=$(osascript -e 'tell application "System Events" to button returned of(display dialog "JSC has created a special API account for the Jamf Setup app to use in order for the app to actually be able to change the loadout of the devices. For security reasons, you will need to manually enter the password in the Jamf Pro GUI at 
+
+Settings/Jamf Pro User Accounts and Groupds/'"$setupUser"'
+
+To randomly generate a 25 character alphanumeric password, click the Copy to Clipbaord button below. To specify your own password, click Manually Enter Password." buttons {"Copy to Clipboard","Manually Enter Password"} default button 1)')
+echo $(date) "User has selected $passwordOption..." >> $logPath
+
+# If they selected to copy to clipboard, copy the random password to their clipboard and prompt them to go to jamf
+# and enter it as the password for the jamfSetup user. If they opted to manually set it, prompt them to enter the 
+# password they would like to use and again prompt them to enter it in jamf pro. With either option, validate that the
+# account and password work before continuing.
+
+if [[ $passwordOption == "Copy to Clipboard" ]]; then
+	echo $(date) "Copying password to clipboard" >> $logPath
+	echo $setupPass | pbcopy
+	osascript -e 'tell application "System Events" to button returned of(display dialog "The password has been copied to your clipboard. At this moment, pause for a second and go log into Jamf Pro. Go into Settings/Jamf Pro User Accounts and Groups and find the '"$setupUser"' user that was created. When you edit that user, paste the password into both of the password fields on that user account.
+
+When you have SAVED and finished, click TEST below.
+
+(If you accidentally lost what was on your clipboard, just hit TEST anyway, when it fails it will re-copy the password to your clipboard and prompt you to test again.)" buttons {"TEST"} default button 1)'
+	
+	#test out the credentials with a simple read API call to make sure it can authenticate
+	testCall=$(curl -su $setupUser:$setupPass $jamfProURL/JSSResource/mobiledevices -H "Accept: text/xml" -X GET | xmllint --xpath '/mobile_devices/size/text()' -)
+	
+	#If it returns a number, that means the call succeeded
+	if [[ $testCall > 0 ]] || [[ $testCall == 0 ]]; then
+		setupTest="Successful"
+		echo $(date) "The test call succeeded" >> $logPath
+		else
+			echo $(date) "The test call failed. Trying again" >> $logPath
+		fi
+		
+	while [[ $setupTest != "Successful" ]]; do
+		echo $setupPass | pbcopy
+		osascript -e 'tell application "System Events" to button returned of(display dialog "Authentication Failed 
+		
+The password has been copied to your clipboard again. At this moment, pause for a second and go log into Jamf Pro. Go into Settings/Jamf Pro User Accounts and Groups and find the '"$setupUser"' user that was created. When you edit that user, paste the password into both of the password fields on that user account.
+
+When you have SAVED and finished, click TEST below.
+
+(If you accidentally lost what was on your clipboard, just hit TEST anyway, when it fails it will re-copy the password and prompt you to test again.)" buttons {"TEST"} default button 1)'
+		
+		#test out the credentials with a simple read API call to make sure it can authenticate
+		testCall=$(curl -su $setupUser:$setupPass $jamfProURL/JSSResource/mobiledevices -H "Accept: text/xml" -X GET | xmllint --xpath '/mobile_devices/size/text()' -)
+		
+		#If it returns a number, that means the call succeeded
+		if [[ $testCall > 0 ]] || [[ $testCall == 0 ]]; then
+				setupTest="Successful"
+				echo $(date) "The test call succeeded" >> $logPath
+				else
+					echo $(date) "The test call failed. Trying again" >> $logPath
+				fi
+				done
+	else
+		echo $(date) "User chose to enter their own password, prompting them to enter it." >> $logPath
+		#Prompt the user to enter a password, update the account in Jamf Pro and then hit test to test it out
+	setupPass=$(osascript -e 'tell application "System Events" to text returned of (display dialog "FIRST log into Jamf Pro and go to Settings/Jamf Pro User Accounts and Groups and select the account '"$setupUser"' and set the password for that account how you want it. 
+	
+Make sure to SAVE and then return to this dialog and enter the password in the box below and hit TEST." default answer "ENTER PASSWORD HERE" buttons {"TEST"} default button 1 with hidden answer)')
+		
+	#test out the credentials with a simple read API call to make sure it can authenticate
+	 testCall=$(curl -su $setupUser:$setupPass $jamfProURL/JSSResource/mobiledevices -H "Accept: text/xml" -X GET | xmllint --xpath '/mobile_devices/size/text()' -)
+			
+			#If it returns a number, that means the call succeeded
+			if [[ $testCall > 0 ]] || [[ $testCall == 0 ]]; then
+				setupTest="Successful"
+				echo $(date) "The test call succeeded" >> $logPath
+				else
+					echo $(date) "The test call failed. Trying again" >> $logPath
+				fi
+				
+			while [[ $setupTest != "Successful" ]]; do
+				setupPass=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Authentication Failed
+
+FIRST log into Jamf Pro and go to Settings/Jamf Pro User Accounts and Groups and select the account '"$setupUser"' and set the password for that account how you want it. 
+
+SAVE and then return to this dialog and enter the password in the box below and hit TEST." default answer "ENTER PASSWORD HERE" buttons {"TEST"} default button 1 with hidden answer)')
+				
+				#test out the credentials with a simple read API call to make sure it can authenticate
+				testCall=$(curl -su $setupUser:$setupPass $jamfProURL/JSSResource/mobiledevices -H "Accept: text/xml" -X GET | xmllint --xpath '/mobile_devices/size/text()' -)
+				
+				#If it returns a number, that means the call succeeded
+				if [[ $testCall > 0 ]] || [[ $testCall == 0 ]]; then
+						setupTest="Successful"
+						echo $(date) "The test call succeeded" >> $logPath
+						else
+							echo $(date) "The test call failed. Trying again" >> $logPath
+						fi
+						done
+	fi
 
 #Test to see if the Jamf Setup app exists as an app record and save it's ID as a variable
 jamfSetupID=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/mobiledeviceapplications/name/Jamf%20Setup -H "Accept: text/xml" -X GET | xmllint --xpath '/mobile_device_application/general/id/text()' -)
@@ -160,8 +376,14 @@ jamfSetupID=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/mobiledevic
 if [[ $jamfSetupID > 0 ]] && [[ $jamfSetupID < 99999999999999 ]]; then
 	echo $(date) "Jamf Setup app exists as Mobile Device App record with ID $jamfSetupID" >> $logPath
 	else
-		echo $(date) "Jamf Setup app does not exist as a Mobile Device App record, exiting" >> $logPath
-		osascript -e 'tell application "System Events" to (display dialog "Either your credentials are invalid or the Jamf Setup app does not yet exist as a Mobile Device App record under Devices/Mobile Device Apps in Jamf Pro. If the app record does exist, make sure that your ADMIN account '"$adminUser"' has access to read and update Mobile Device Apps." buttons {"OK"} default button 1)'
+		echo $(date) "Error: $jamfSetupID
+		
+		exiting..." >> $logPath
+		osascript -e 'tell application "System Events" to (display dialog "There was an error attempting to verify the Jamf Setup app exists in your Mobile Device Apps section of Jamf Pro.
+		
+		Error: '"$jamfSetupID"'
+		
+		The script will now exit." buttons {"OK"} default button 1)'
 		exit 0
 		fi
 		
@@ -177,6 +399,7 @@ echo $(date) "Preliminary information gathered. Continuing on with Extension Att
 
 #Prompt the user to name the Extension Attribute that will be created
 EAName=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Constructor will need to create a Mobile Device Extension Attribute in Jamf Pro to use to determine which loadout a device should get. What would you like to name this Extension Attribute? (ex. Loadout, Subdepartment, Role, etc.)" default answer "Loadout" buttons {"OK"} default button 1)')
+
 echo $(date) "User entered $EAName as the name for the extension attribute." >> $logPath
 
 #Have the user verify the name
@@ -189,9 +412,11 @@ echo $(date) "Requesting user verify entry..." >> $logPath
 
 #Use a while loop to let them reset the EA Name if need be
 while [[ $EANameVerification != "Yes" ]]; do
+	
 	#Rename the EAName variable
 	echo $(date) "User requested to re-enter the name" >> $logPath
 	EAName=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Re-enter the name for the Extension Attribute (ex. Loadout, Subdepartment, Role, etc.)" default answer "$EAName" buttons {"OK"} default button 1)')
+	
 	#Have the user verify the name
 	echo $(date) "Requesting user verify re-entry..." >> $logPath
 	EANameVerification=$(osascript -e 'tell application "System Events" to button returned of (display dialog "You have chosen to name your Mobile Device Extension Attribute:
@@ -206,6 +431,7 @@ echo $(date) "Extension Attribute successfully named $EAName" >> $logPath
 osascript -e 'tell application "System Events" to (display dialog "Next we will create options for your '"$EAName"' Extension Attribute. These will be the options that are displayed on the Jamf Setup screen for a user to choose from to decide what kind of loadout the device should receive. 
 
 You will be prompted to add as many options as you would like and once you are finished we will proceed with the optional steps." buttons {"OK"} default button 1)'
+
 echo $(date) "Requesting user enter options for the Extension Attribute and verify their entries..." >> $logPath
 
 while [[ $EAOptionIndex != 0 ]]; do
@@ -222,8 +448,10 @@ Is this correct?" buttons {"Yes", "No, try again..."} default button 1)')
 	
 	#Re-enter the name if need be
 	while [[ $EAOptionVerification != "Yes" ]]; do
+		
 		#Rename the Option
 		EAOptionName=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the name for Option '"$EAOptionIndex"' of your '"$EAName"' Extension Attribute" default answer "" buttons {"OK"} default button 1)')
+		
 		#Have user verify their entry
 		EAOptionVerification=$(osascript -e 'tell application "System Events" to button returned of (display dialog "You entered:
 
@@ -231,6 +459,7 @@ Is this correct?" buttons {"Yes", "No, try again..."} default button 1)')
 
 Is this correct?" buttons {"Yes", "No, try again..."} default button 1)')
 		done
+		
 	#Once verified, add the option to the EAOptions Array
 	EAOptions+=( "$(echo $EAOptionName)" )
 	echo "	$EAOptionName has been added as an option for the Extension Attribute." >> $logPath
@@ -389,7 +618,7 @@ Scoping with the use of Jamf Setup requires Smart Mobile Device Groups to be cre
 OPTION 1: Include a Newly Enrolled Devices Group
 -This option allows an extra smart group to be created that can define Newly Enrolled Devices where the end user has not yet opened Jamf Setup and selected a loadout. This is helpful for new out of box deployments (or recently wiped devices) where you might want to have an empty Home Screen with just the Jamf Setup app displayed so the user can select a loadout to then receive the content provisioned for them.
 
-OPTION 2: Only include smart groups for the different  options
+OPTION 2: Only include smart groups for the different options
 -This option is if you do not plan on having an out of box experience with Jamf Setup, and just want smart groups based on the extension attribute value.
 
 Which Option Would You Prefer?" buttons {"Option 1", "Option 2"} default button 1)')
@@ -406,7 +635,6 @@ if [[ $smartGroupChoice == "Option 1" ]]; then
 fi
 	
 #Build Smart Group Names
-
 #Generate array of names based off of the options in the Extension Attribute
 for i in $(seq 0 $EAindex); do
 	#add EA name to template
@@ -428,10 +656,10 @@ JAMF PRO SERVER ADDRESS
 $jamfProURL
 
 ADMIN ACCOUNT
-The Jamf Pro user that this script will use to make these changes is $adminUser
+The Jamf Pro user that this script will use to make these changes is: $adminUser
 
 SETUP ACCOUNT
-The Jamf Pro user that Jamf Setup will use is $setupUser
+The Jamf Pro user that Jamf Setup will use is: $setupUser
 
 EXTENSION ATTRIBUTE
 $EAConfirmationMessage

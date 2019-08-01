@@ -43,6 +43,8 @@ Here are the default options:<br>**-Background Color** (Hexidecimal format, defa
 
 Once the script has run, you will be able to find detailed logs in ~/Desktop/JamfSetupConstructorLogs.txt
 
+Also if you're unfamiliar with HOW to run a script like this, simply download the JamfSetupConstructor.sh file, then open Terminal on a Mac that is enrolled in Jamf Pro. Simply drag the script onto the terminal window and hit enter to begin running it. You may see some verbose output in the terminal window, but you can just ignore it! Any necessary details will be found in the logs.
+
 What Next?
 --------
 So the script ran successfully and everything is all set up. What next?

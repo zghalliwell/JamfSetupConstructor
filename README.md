@@ -37,7 +37,7 @@ How To Use This Script
 <br>This is what the app looks like by default. The text and colors can all be changed and colors must be entered in hexidecimal format. For help on finding these codes, I recommend https://htmlcolorcodes.com/#
 Here are the default options:<br>**-Background Color** (Hexidecimal format, default-white: #F8F8F8)<br>**-Page Text Color** (Hexidecimal format, default-dark grey: #444444)<br>**-Button Color** (Hexidecimal format, default-seafoam green: #37BB9A)<br>**-Button Text Color** (Hexidecimal format, default-white: #F8F8F8)<br>**-Header Image Logo** (Hosted URL path, default: Jamf Logo)<br>**-Main Page Title** (Text, default: Make a Selection)<br>**-Main Page Body Text** (Text, default: Select the appropriate role below, and then click Submit to configure your device)<br>**-Button Text** (Text, default: Submit)<br>**-Success Page Title** (Text, default: Success)<br>**-Success Page Body Text** (Text, default: You have selected $SELECTION. Press the home button or swipe up to begin using this device.)
 
-Once the script has run, you will be able to find detailed logs in /Users/Shared/JamfSetupConstructorLogs.txt
+Once the script has run, you will be able to find detailed logs in ~/Desktop/JamfSetupConstructorLogs.txt
 
 What Next?
 --------

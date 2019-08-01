@@ -181,9 +181,6 @@ echo $(date) "Checking to see if admin user $adminUser has the correct privilege
 adminRecord=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/username/$adminUser -H "Accept: text/xml" -X GET)
 adminPrivileges=$(echo $adminRecord | xmllint --xpath '/account/privileges/jss_objects' -)
 
-# Kill the Jamf Helper prompt that's telling them to wait
-jamf killJAMFHelper
-
 # Testing user's privileges to see if the necessary ones exist
 if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Update Mobile Device Applications"* ]] && [[ $adminPrivileges == *"Create Mobile Device Extension Attributes"* ]] && [[ $adminPrivileges == *"Create Static Mobile Device Groups"* ]] && [[ $adminPrivileges == *"Create Accounts"* ]] && [[ $adminPrivileges == *"Read Accounts"* ]] && [[ $adminPrivileges == *"Update Accounts"* ]] && [[ $adminPrivileges == *"Create Smart Mobile Device Groups"* ]]; then
 	
@@ -199,6 +196,9 @@ if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPri
 	Exiting script." >> $logPath
 	
 	#Inform the user that the account does not have proper privileges
+	# Kill the Jamf Helper prompt that's telling them to wait
+	pkill jamfHelper
+
 	osascript -e 'tell application "System Events" to(display dialog "Your admin account does not have the correct privileges. Please log into Jamf Pro and give the account the following permissions:
 
 	-CREATE/READ/UPDATE on Jamf Pro User Accounts and Groups
@@ -228,8 +228,9 @@ if [[ $adminPrivileges == *"Read Mobile Device Applications"* ]] && [[ $adminPri
 
 echo $(date) "JSC will now check if the $setupUser account exists in Jamf Pro or not..." >> $logPath
 
-#First run an API command to see if the account exists and save the response in a variable
-accountVerify=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/username/$setupUser -H "Accept: text/xml" -X GET | xmllint --xpath '/account/name/text()' -)
+#First run an API command to see if the account exists and save the response in a variable and hide any errors that might
+#come through if the account doesn't exist
+accountVerify=$(curl -su $adminUser:$adminPass $jamfProURL/JSSResource/accounts/username/$setupUser -H "Accept: text/xml" -X GET | xmllint --xpath '/account/name/text()' - 2>/dev/null)
 
 #Test to see if the account is created, if it's not created then create it with appropriate permissions
 #If it is created, check its permissions and update them with the appropriate permissions if necessary
@@ -289,6 +290,9 @@ fi
 
 #Generate a random 25-character alphanumeric string and save it in the setupPass variable
 setupPass=$(perl -e '@c=("A".."Z","a".."z",0..9);$p.=$c[rand(scalar @c)] for 1..25; print "$p\n"')
+
+# Kill the Jamf Helper prompt that's telling them to wait
+pkill jamfHelper
 
 #Prompt the user to ask them if they would like to use the randomly generated password or enter their own password
 passwordOption=$(osascript -e 'tell application "System Events" to button returned of(display dialog "JSC has created a special API account for the Jamf Setup app to use in order for the app to actually be able to change the loadout of the devices. For security reasons, you will need to manually enter the password in the Jamf Pro GUI at 
@@ -971,7 +975,7 @@ echo "Everything has been successfully created! Enjoy your new Jamf Setup experi
 " >> $logPath
 
 #Kill the jamf helper window that's telling the user to wait
-jamf killJAMFHelper
+pkill jamfHelper
 
 closingSelection=$(osascript -e 'tell application "System Events" to button returned of (display dialog "All finished! Your Jamf Pro server should now be configured with the proper extension attribute and corresponding smart groups and app configuration!
 

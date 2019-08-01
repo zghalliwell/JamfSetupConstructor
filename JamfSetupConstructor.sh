@@ -514,7 +514,8 @@ osascript -e 'tell application "System Events" to (display dialog "Brilliant!
 
 NOTE: Nothing has been created in Jamf Pro so far, please proceed to finish Construction." buttons {"Proceed"} default button 1)'
 
-echo $(date) "$EAConfirmationMessage" >> $logPath
+echo $(date) "$EAConfirmationMessage
+" >> $logPath
 echo $(date) "Extension attribute section completed. Starting Optional Configurations
 
 ################################

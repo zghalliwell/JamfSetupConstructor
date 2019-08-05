@@ -169,7 +169,7 @@ echo "
 # After proceeding, first prompt the user to enter admin credentials for their Jamf Pro server
 adminUser=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the username of an ADMIN for your Jamf Pro server at '"$jamfProURL"'" default answer "" buttons {"OK"} default button 1)')
 echo $(date) "Jamf Pro admin account to be used: $adminUser" >> $logPath
-#
+
 # Prompt for their admin password with hidden input
 adminPass=$(osascript -e 'tell application "System Events" to text returned of (display dialog "Please enter the password for admin user '"$adminUser"' for your Jamf Pro server at '"$jamfProURL"'" default answer "" buttons {"OK"} default button 1 with hidden answer)')
 

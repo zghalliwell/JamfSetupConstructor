@@ -20,7 +20,7 @@
 # 6. The URL of a hosted image to display when the app opens (optional)
 # 7. Any messaging you would like to change (optional)
 #
-# Upon completion or failure, you can find the logs at /Users/Shared/JamfSetupConstructorLogs.txt
+# Upon completion or failure, you can find the logs at ~/Desktop/JamfSetupConstructorLogs.txt
 #
 # Do not change anything below this line manually, the script will prompt you for input
 #
